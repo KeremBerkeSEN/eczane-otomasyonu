@@ -1,6 +1,6 @@
 import { Form, Input, Button, message } from 'antd';
 import { fetchEmployees } from '../api/sheetsApi';
-import loginLogo from '../assets/login-logo.png'; // Yeni logoyu import et
+import loginLogo from '../assets/login-logo.png';
 
 const LoginForm = ({ onLogin }) => {
   const [form] = Form.useForm();
@@ -53,7 +53,7 @@ const LoginForm = ({ onLogin }) => {
         <img 
           src={loginLogo} 
           alt="Login Logo" 
-          style={{ width: '300px', marginBottom: '30px' }} // Logo boyutu 200px'den 300px'e çıkarıldı
+          style={{ width: '300px', marginBottom: '30px' }}
         />
         <Form
           form={form}

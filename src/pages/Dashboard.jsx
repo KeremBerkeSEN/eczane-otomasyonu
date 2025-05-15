@@ -42,7 +42,7 @@ const Dashboard = ({ user, onMedicinesChange }) => {
 
   const filteredMedicines = medicines
     .filter(medicine => medicine?.ilac_adi?.toLowerCase().startsWith(searchText.toLowerCase() || ''))
-    .sort((a, b) => parseInt(a.id) - parseInt(b.id)); // Sort by ID
+    .sort((a, b) => parseInt(a.id) - parseInt(b.id));
 
   const handleAddMedicine = async (values) => {
     try {
