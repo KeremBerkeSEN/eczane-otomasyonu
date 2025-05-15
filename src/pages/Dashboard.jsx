@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Table, Typography, Spin, Input, Button, Modal, Form, InputNumber, message, Space, Popconfirm } from 'antd';
+import { Table, Typography, Spin, Input, Button, Modal, Form, InputNumber, message, Space, Popconfirm, notification } from 'antd';
 import { fetchMedicines, addMedicine, updateMedicine, deleteMedicine, recordSale, fetchSales, fetchEmployees, updateSale } from '../api/sheetsApi';
 import { BarChartOutlined } from '@ant-design/icons';
 
@@ -22,13 +22,14 @@ const Dashboard = ({ user, onMedicinesChange }) => {
   const [priceForm] = Form.useForm();
   const [stockForm] = Form.useForm();
   const [pagination, setPagination] = useState({ current: 1, pageSize: 5 });
+  const [api, contextHolder] = notification.useNotification();
 
   useEffect(() => {
     const loadMedicines = async () => {
       try {
         const data = await fetchMedicines();
         setMedicines(data);
-        onMedicinesChange(data); // Update parent state
+        onMedicinesChange(data);
       } catch (err) {
         console.error('İlaç verileri alınamadı:', err);
       } finally {
@@ -45,7 +46,6 @@ const Dashboard = ({ user, onMedicinesChange }) => {
 
   const handleAddMedicine = async (values) => {
     try {
-      // Check for duplicate medicine name
       const duplicateMedicine = medicines.find(
         m => m.ilac_adi.toLowerCase() === values.ilac_adi.toLowerCase()
       );
@@ -62,21 +62,27 @@ const Dashboard = ({ user, onMedicinesChange }) => {
 
       setLoading(true);
       const newMedicine = await addMedicine(values);
-      
-      // Update local state immediately
       setMedicines(prevMedicines => [...prevMedicines, newMedicine]);
-      onMedicinesChange([...medicines, newMedicine]); // Update parent state
-      
-      // Calculate and set last page
+      onMedicinesChange([...medicines, newMedicine]);
       const newTotalItems = medicines.length + 1;
       const lastPage = Math.ceil(newTotalItems / pagination.pageSize);
       setPagination(prev => ({ ...prev, current: lastPage }));
       
-      message.success('İlaç başarıyla eklendi');
+      api.success({
+        message: 'İlaç Başarıyla Eklendi',
+        description: `${values.ilac_adi} isimli ilaç başarıyla eklendi.`,
+        placement: 'topRight',
+        duration: 3
+      });
+
       setIsModalVisible(false);
       form.resetFields();
     } catch (error) {
-      message.error('İlaç eklenirken hata oluştu');
+      api.error({
+        message: 'İlaç Ekleme Başarısız',
+        description: 'İşlem sırasında bir hata oluştu.',
+        placement: 'topRight'
+      });
       console.error('Add medicine error:', error);
     } finally {
       setLoading(false);
@@ -94,8 +100,7 @@ const Dashboard = ({ user, onMedicinesChange }) => {
       
       const allSales = await fetchSales();
       const today = new Date().toISOString().split('T')[0];
-      
-      // Aynı gün içinde aynı ilaç ve fiyat için yapılan satışı bul
+
       const existingSale = allSales.find(sale => 
         sale.ilac_adi === selectedMedicine.ilac_adi &&
         parseFloat(sale.satis_fiyati) === parseFloat(selectedMedicine.fiyat) &&
@@ -116,14 +121,12 @@ const Dashboard = ({ user, onMedicinesChange }) => {
       await updateMedicine(updatedMedicine);
 
       if (existingSale) {
-        // Mevcut satışı güncelle
         const updatedSale = {
           ...existingSale,
           miktar: parseInt(existingSale.miktar) + parseInt(values.quantity)
         };
         await updateSale(updatedSale);
       } else {
-        // Yeni satış kaydı oluştur
         await recordSale({
           ilac_adi: selectedMedicine.ilac_adi,
           quantity: values.quantity,
@@ -136,11 +139,21 @@ const Dashboard = ({ user, onMedicinesChange }) => {
       setMedicines(updatedData);
       onMedicinesChange(updatedData);
       
-      message.success('Satış başarıyla gerçekleşti');
+      api.success({
+        message: 'Satış Başarıyla Tamamlandı',
+        description: `${selectedMedicine.ilac_adi} ilacından ${values.quantity} adet satıldı.`,
+        placement: 'topRight',
+        duration: 3
+      });
+      
       setIsSaleModalVisible(false);
       saleForm.resetFields();
     } catch (error) {
-      message.error('Satış işlemi başarısız');
+      api.error({
+        message: 'Satış İşlemi Başarısız',
+        description: 'İşlem sırasında bir hata oluştu.',
+        placement: 'topRight'
+      });
       console.error('Sale error:', error);
     } finally {
       setLoading(false);
@@ -150,12 +163,23 @@ const Dashboard = ({ user, onMedicinesChange }) => {
   const handleDelete = async (id) => {
     try {
       setLoading(true);
+      const medicineToDelete = medicines.find(med => med.id === id);
       const updatedData = await deleteMedicine(id);
       setMedicines(updatedData);
-      onMedicinesChange(updatedData); // Update parent state
-      message.success('İlaç başarıyla silindi');
+      onMedicinesChange(updatedData);
+      
+      api.success({
+        message: 'İlaç Başarıyla Silindi',
+        description: `${medicineToDelete.ilac_adi} isimli ilaç kayıtlardan kaldırıldı.`,
+        placement: 'topRight',
+        duration: 3
+      });
     } catch (error) {
-      message.error('İlaç silinirken hata oluştu');
+      api.error({
+        message: 'İlaç Silme Başarısız',
+        description: 'İşlem sırasında bir hata oluştu.',
+        placement: 'topRight'
+      });
       console.error('Delete error:', error);
     } finally {
       setLoading(false);
@@ -172,13 +196,23 @@ const Dashboard = ({ user, onMedicinesChange }) => {
       
       const updatedData = await updateMedicine(updatedMedicine);
       setMedicines(updatedData);
-      onMedicinesChange(updatedData); // Update parent state
+      onMedicinesChange(updatedData);
       
-      message.success('Fiyat başarıyla güncellendi');
+      api.success({
+        message: 'Fiyat Başarıyla Güncellendi',
+        description: `${selectedMedicine.ilac_adi} ilacının fiyatı ${values.fiyat}₺ olarak güncellendi.`,
+        placement: 'topRight',
+        duration: 3
+      });
+
       setIsPriceModalVisible(false);
       priceForm.resetFields();
     } catch (error) {
-      message.error('Fiyat güncellenirken hata oluştu');
+      api.error({
+        message: 'Fiyat Güncelleme Başarısız',
+        description: 'İşlem sırasında bir hata oluştu.',
+        placement: 'topRight'
+      });
       console.error('Price update error:', error);
     } finally {
       setLoading(false);
@@ -190,18 +224,28 @@ const Dashboard = ({ user, onMedicinesChange }) => {
       setLoading(true);
       const updatedMedicine = {
         ...selectedMedicine,
-        stok: parseInt(selectedMedicine.stok || 0) + parseInt(values.quantity) // Handle null/undefined stock
+        stok: parseInt(selectedMedicine.stok || 0) + parseInt(values.quantity)
       };
       
       const updatedData = await updateMedicine(updatedMedicine);
       setMedicines(updatedData);
-      onMedicinesChange(updatedData); // Update parent state
+      onMedicinesChange(updatedData);
       
-      message.success('Stok başarıyla güncellendi');
+      api.success({
+        message: 'Stok Başarıyla Güncellendi',
+        description: `${selectedMedicine.ilac_adi} ilacına ${values.quantity} adet stok eklendi.`,
+        placement: 'topRight',
+        duration: 3
+      });
+
       setIsStockModalVisible(false);
       stockForm.resetFields();
     } catch (error) {
-      message.error('Stok güncellenirken hata oluştu');
+      api.error({
+        message: 'Stok Güncelleme Başarısız',
+        description: 'İşlem sırasında bir hata oluştu.',
+        placement: 'topRight'
+      });
       console.error('Stock update error:', error);
     } finally {
       setLoading(false);
@@ -213,17 +257,12 @@ const Dashboard = ({ user, onMedicinesChange }) => {
       setLoading(true);
       const allSales = await fetchSales();
       const employees = await fetchEmployees();
-      
-      // Create a map to store unique sales based on composite key
       const uniqueSalesMap = new Map();
       
       allSales
         .filter(sale => sale.ilac_adi === medicine.ilac_adi)
         .forEach(sale => {
-          // Include satis_fiyati in the unique key
           const uniqueKey = `${sale.ilac_adi}-${sale.tarih}-${sale.satis_fiyati}-${sale.calisan_email}`;
-          
-          // Her satışı ayrı göster, fiyatlar farklı ise birleştirme yapma
           uniqueSalesMap.set(uniqueKey, {
             ...sale,
             key: uniqueKey,
@@ -233,14 +272,10 @@ const Dashboard = ({ user, onMedicinesChange }) => {
             toplam: ((parseInt(sale.miktar) || 0) * (parseFloat(sale.satis_fiyati) || 0)).toFixed(2)
           });
         });
-      
-      // Convert map values to array and sort by date
       const uniqueSales = Array.from(uniqueSalesMap.values())
         .sort((a, b) => {
-          // Önce tarihe göre sırala
           const dateCompare = new Date(b.tarih) - new Date(a.tarih);
           if (dateCompare !== 0) return dateCompare;
-          // Tarihler aynıysa fiyata göre sırala
           return parseFloat(b.satis_fiyati) - parseFloat(a.satis_fiyati);
         });
       
@@ -304,21 +339,27 @@ const Dashboard = ({ user, onMedicinesChange }) => {
       dataIndex: 'ilac_adi', 
       key: 'ilac_adi',
       sorter: (a, b) => a.ilac_adi.localeCompare(b.ilac_adi),
-      defaultSortOrder: 'ascend'
+      sortDirections: ['ascend', 'descend'],
+      defaultSortOrder: 'ascend',
+      width: 200 
     },
     { 
       title: 'Fiyat (₺)', 
       dataIndex: 'fiyat', 
       key: 'fiyat',
       sorter: (a, b) => parseFloat(a.fiyat) - parseFloat(b.fiyat),
-      render: (fiyat) => parseFloat(fiyat).toFixed(2)
+      sortDirections: ['ascend', 'descend'],
+      render: (fiyat) => parseFloat(fiyat).toFixed(2),
+      width: 150 
     },
     { 
       title: 'Stok', 
       dataIndex: 'stok', 
       key: 'stok',
       sorter: (a, b) => (parseInt(a.stok) || 0) - (parseInt(b.stok) || 0),
-      render: (stok) => stok || 0
+      sortDirections: ['ascend', 'descend'],
+      render: (stok) => stok || 0,
+      width: 100 
     },
     {
       title: 'İşlemler',
@@ -331,7 +372,7 @@ const Dashboard = ({ user, onMedicinesChange }) => {
               setSelectedMedicine(record);
               setIsSaleModalVisible(true);
             }}
-            disabled={!record.stok || record.stok <= 0} // Updated condition
+            disabled={!record.stok || record.stok <= 0}
           >
             Satış Yap
           </Button>
@@ -368,11 +409,13 @@ const Dashboard = ({ user, onMedicinesChange }) => {
           </Popconfirm>
         </Space>
       ),
+      width: 300 
     },
   ];
 
   return (
     <div>
+      {contextHolder}
       <Title level={3}>Hoş geldin, {user.ad} 👋</Title>
       
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
@@ -392,16 +435,16 @@ const Dashboard = ({ user, onMedicinesChange }) => {
         <Table
           columns={columns}
           dataSource={filteredMedicines}
-          rowKey={(record) => record.id} // Use only ID as row key
+          rowKey={(record) => record.id} 
           pagination={{
             ...pagination,
             onChange: (page, pageSize) => setPagination({ current: page, pageSize }),
-            pageSize: 8 // Adjusted page size to fit screen
+            pageSize: 8 
           }}
-          scroll={{ x: 'max-content' }} // Removed vertical scroll
+          scroll={{ x: 'max-content' }} 
           style={{ 
             marginBottom: 16,
-            height: 'fit-content' // Added to fit content
+            height: 'fit-content' 
           }}
           defaultSortOrder="ascend"
           sortDirections={["ascend"]}
@@ -419,7 +462,16 @@ const Dashboard = ({ user, onMedicinesChange }) => {
       >
         <Form 
           form={form} 
-          onFinish={handleAddMedicine} 
+          onFinish={(values) => {
+            if (values.fiyat <= 0) {
+              form.setFields([{
+                name: 'fiyat',
+                errors: ['Sıfırdan büyük bir sayı giriniz']
+              }]);
+              return;
+            }
+            handleAddMedicine(values);
+          }} 
           layout="vertical"
         >
           <Form.Item
@@ -445,7 +497,10 @@ const Dashboard = ({ user, onMedicinesChange }) => {
           <Form.Item
             name="fiyat"
             label="Fiyat (₺)"
-            rules={[{ required: true, message: 'Fiyat gerekli' }]}
+            rules={[
+              { required: true, message: 'Fiyat gerekli' },
+              { type: 'number', min: 0.01, message: 'Sıfırdan büyük bir sayı giriniz' }
+            ]}
           >
             <InputNumber min={0} style={{ width: '100%' }} />
           </Form.Item>
@@ -476,13 +531,24 @@ const Dashboard = ({ user, onMedicinesChange }) => {
         <Form 
           form={saleForm} 
           onFinish={(values) => {
-            if (values.quantity > selectedMedicine?.stok || !Number.isInteger(values.quantity)) {
+            if (values.quantity <= 0) {
+              saleForm.setFields([{
+                name: 'quantity',
+                errors: ['Sıfırdan büyük bir sayı giriniz']
+              }]);
+              return;
+            }
+            if (values.quantity > selectedMedicine?.stok) {
+              saleForm.setFields([{
+                name: 'quantity',
+                errors: ['Yeterli sayıda stok bulunmamaktadır']
+              }]);
               return;
             }
             handleSale(values);
           }}
           layout="vertical"
-          initialValues={{ quantity: 1 }}
+          initialValues={{ quantity: undefined }}
         >
           <Text>İlaç: {selectedMedicine?.ilac_adi}</Text>
           <br />
@@ -499,24 +565,7 @@ const Dashboard = ({ user, onMedicinesChange }) => {
               <InputNumber 
                 min={0}
                 precision={0}
-                max={selectedMedicine?.stok}
                 style={{ width: '100%' }}
-                onChange={(value) => {
-                  saleForm.setFieldsValue({ quantity: value });
-                  if (!value || value <= 0) {
-                    saleForm.setFields([{
-                      name: 'quantity',
-                      value: value,
-                      errors: ['Sıfırdan büyük bir sayı giriniz']
-                    }]);
-                  } else if (value > selectedMedicine?.stok) {
-                    saleForm.setFields([{
-                      name: 'quantity',
-                      value: value,
-                      errors: ['Yeterli sayıda stok bulunmamaktadır']
-                    }]);
-                  }
-                }}
               />
             </Form.Item>
           ) : (
@@ -540,14 +589,30 @@ const Dashboard = ({ user, onMedicinesChange }) => {
         onCancel={() => setIsPriceModalVisible(false)}
         footer={null}
       >
-        <Form form={priceForm} onFinish={handlePriceUpdate} layout="vertical">
+        <Form 
+          form={priceForm} 
+          onFinish={(values) => {
+            if (values.fiyat <= 0) {
+              priceForm.setFields([{
+                name: 'fiyat',
+                errors: ['Sıfırdan büyük bir sayı giriniz']
+              }]);
+              return;
+            }
+            handlePriceUpdate(values);
+          }} 
+          layout="vertical"
+        >
           <Text>İlaç: {selectedMedicine?.ilac_adi}</Text>
           <br />
           <Text>Mevcut Fiyat: {selectedMedicine?.fiyat} ₺</Text>
           <Form.Item
             name="fiyat"
             label="Yeni Fiyat (₺)"
-            rules={[{ required: true, message: 'Yeni fiyat gerekli' }]}
+            rules={[
+              { required: true, message: 'Yeni fiyat gerekli' },
+              { type: 'number', min: 0.01, message: 'Sıfırdan büyük bir sayı giriniz' }
+            ]}
           >
             <InputNumber min={0} style={{ width: '100%' }} />
           </Form.Item>
@@ -634,7 +699,7 @@ const Dashboard = ({ user, onMedicinesChange }) => {
           dataSource={medicineDetails?.sales || []}
           columns={saleDetailsColumns}
           pagination={false}
-          rowKey={record => record.key} // Use the unique composite key
+          rowKey={record => record.key} 
           onChange={(_, __, sorter) => {
             const { field, order } = sorter;
             if (field && order) {

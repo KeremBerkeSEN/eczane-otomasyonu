@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Modal, Form, Select, DatePicker, Button, Input, message, notification, Table, Space, Card, Statistic, Typography } from 'antd';
 import { MailOutlined, CheckCircleOutlined, CheckOutlined } from '@ant-design/icons';
-import { fetchSales } from '../api/sheetsApi';
+import { fetchSales, fetchEmployees } from '../api/sheetsApi';
 
 const { Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -13,7 +13,21 @@ const ReportModal = ({ visible, onCancel, medicines }) => {
   const [loading, setLoading] = useState(false);
   const [filteredSales, setFilteredSales] = useState([]);
   const [showResults, setShowResults] = useState(false);
+  const [employees, setEmployees] = useState([]);
   const [notificationApi, contextHolder] = notification.useNotification();
+
+  useEffect(() => {
+    const loadEmployees = async () => {
+      try {
+        const employeeData = await fetchEmployees();
+        setEmployees(employeeData);
+      } catch (error) {
+        console.error('Çalışan verileri yüklenirken hata:', error);
+      }
+    };
+
+    loadEmployees();
+  }, []);
 
   const columns = [
     { title: 'İlaç Adı', dataIndex: 'ilac_adi', key: 'ilac_adi' },
@@ -30,7 +44,7 @@ const ReportModal = ({ visible, onCancel, medicines }) => {
       
       let filtered = sales;
 
-      // İlaç filtreleme
+      
       if (values.medicine_id) {
         const selectedMedicine = medicines.find(m => m.id === values.medicine_id);
         if (selectedMedicine) {
@@ -40,7 +54,7 @@ const ReportModal = ({ visible, onCancel, medicines }) => {
         }
       }
 
-      // Tarih filtreleme
+      
       if (values.dateRange?.length === 2) {
         const startDate = values.dateRange[0].startOf('day');
         const endDate = values.dateRange[1].endOf('day');
@@ -50,7 +64,12 @@ const ReportModal = ({ visible, onCancel, medicines }) => {
         });
       }
 
-      // Verileri işle
+      
+      if (values.employee_email) {
+        filtered = filtered.filter(sale => sale.calisan_email === values.employee_email);
+      }
+
+      
       const processedData = filtered.map((sale, index) => ({
         key: `${sale.id}-${index}`,
         ilac_adi: sale.ilac_adi,
@@ -64,7 +83,7 @@ const ReportModal = ({ visible, onCancel, medicines }) => {
       setShowResults(true);
 
       if (values.email) {
-        // Email gönderme simülasyonu
+        
         await new Promise(resolve => setTimeout(resolve, 1000));
         message.success('Rapor başarıyla e-mail olarak gönderildi');
         form.resetFields(['email']);
@@ -82,7 +101,7 @@ const ReportModal = ({ visible, onCancel, medicines }) => {
     try {
       const values = await emailForm.validateFields();
       if (values.email) {
-        // Simulate email sending
+      
         await new Promise(resolve => setTimeout(resolve, 500));
         
         notificationApi.open({
@@ -140,6 +159,16 @@ const ReportModal = ({ visible, onCancel, medicines }) => {
             </Select>
           </Form.Item>
 
+          <Form.Item name="employee_email" label="Çalışan Filtresi">
+            <Select allowClear placeholder="Tüm çalışanlar">
+              {employees.map(employee => (
+                <Option key={employee.email} value={employee.email}>
+                  {employee.ad}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+
           <Form.Item name="dateRange" label="Tarih Aralığı">
             <RangePicker style={{ width: '100%' }} />
           </Form.Item>
@@ -188,7 +217,6 @@ const ReportModal = ({ visible, onCancel, medicines }) => {
             }}
           />
 
-          {/* Email gönderme formu - Ayrı bir form olarak */}
           <Card style={{ marginTop: 16 }}>
             <Form 
               form={emailForm}

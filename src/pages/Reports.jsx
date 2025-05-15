@@ -96,7 +96,7 @@ const Reports = () => {
     <div>
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Title level={3}>Satışlar</Title>
+          <Title level={3}>Satışlar ve Raporlama</Title>
           <Button 
             type="primary" 
             onClick={() => setIsModalVisible(true)}

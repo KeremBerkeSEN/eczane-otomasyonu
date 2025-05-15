@@ -20,8 +20,6 @@ const Statistics = () => {
         setLoading(true);
         const sales = await fetchSales();
         setSalesData(sales);
-
-        // Improved data processing
         const medicineStats = sales.reduce((acc, sale) => {
           const key = sale.ilac_adi;
           if (!acc[key]) {
@@ -41,8 +39,6 @@ const Statistics = () => {
 
           return acc;
         }, {});
-
-        // Transform data for charts
         const byMedicine = Object.entries(medicineStats).map(([name, data]) => ({
           ilac: name,
           miktar: data.quantity
@@ -72,7 +68,6 @@ const Statistics = () => {
     xField: 'ilac',
     yField: 'miktar',
     label: {
-      // Fixed position value
       position: 'top',
       style: {
         fill: '#000000',
@@ -98,15 +93,29 @@ const Statistics = () => {
     colorField: 'type',
     radius: 0.8,
     label: {
-      position: 'outside', // Changed from 'outer' to 'outside'
+      position: 'outside',
       style: { textAlign: 'center' },
-      formatter: (datum) => `${datum.type}\n${datum.value.toFixed(2)}₺`
+      formatter: (datum) => {
+        if (!datum || !datum.type || !datum.value) {
+          return '';
+        }
+        const total = chartData.byRevenue.reduce((sum, item) => sum + item.value, 0);
+        const percentage = ((datum.value / total) * 100).toFixed(2);
+        return `${datum.type}: ${percentage}%`;
+      }
     },
     tooltip: {
-      formatter: (datum) => ({
-        name: datum.type,
-        value: `${datum.value.toFixed(2)}₺`
-      })
+      formatter: (datum) => {
+        if (!datum || !datum.type || !datum.value) {
+          return { name: '', value: '' };
+        }
+        const total = chartData.byRevenue.reduce((sum, item) => sum + item.value, 0);
+        const percentage = ((datum.value / total) * 100).toFixed(2);
+        return {
+          name: datum.type,
+          value: `${datum.value.toFixed(2)}₺ (${percentage}%)`
+        };
+      }
     },
     legend: {
       layout: 'vertical',

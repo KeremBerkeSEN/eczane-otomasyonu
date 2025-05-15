@@ -9,28 +9,35 @@ const MedicineSaleDetailsModal = ({ visible, onCancel, medicineData }) => {
       title: 'Tarih',
       dataIndex: 'tarih',
       key: 'tarih',
-      width: 120
+      width: 120,
+      sorter: (a, b) => new Date(a.tarih) - new Date(b.tarih),
+      sortDirections: ['ascend', 'descend']
     },
     { 
       title: 'Miktar',
       dataIndex: 'miktar',
       key: 'miktar',
       width: 100,
-      align: 'right'
+      align: 'right',
+      sorter: (a, b) => a.miktar - b.miktar,
+      sortDirections: ['ascend', 'descend']
     },
     { 
       title: 'Satış Fiyatı (₺)',
       dataIndex: 'satis_fiyati',
       key: 'satis_fiyati',
       width: 120,
-      align: 'right'
+      align: 'right',
+      sorter: (a, b) => a.satis_fiyati - b.satis_fiyati,
+      sortDirections: ['ascend', 'descend']
     },
     { 
       title: 'Toplam (₺)',
       key: 'toplam',
       width: 120,
       align: 'right',
-      render: (record) => (parseFloat(record.miktar) * parseFloat(record.satis_fiyati)).toFixed(2)
+      sorter: (a, b) => (a.miktar * a.satis_fiyati) - (b.miktar * b.satis_fiyati),
+      sortDirections: ['ascend', 'descend']
     }
   ];
 

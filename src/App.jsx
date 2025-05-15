@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import Statistics from './pages/Statistics';
 import Reports from './pages/Reports';
 import './App.css';
+import dashboardLogo from './assets/dashboard-logo.png';
 
 const { Header, Content, Sider } = Layout;
 const { Title, Text } = Typography;
@@ -68,7 +69,7 @@ function App() {
   const menuItems = [
     { key: '1', icon: <DashboardOutlined />, label: 'İlaç İşlemleri' },
     { key: '3', icon: <BarChartOutlined />, label: 'İstatistikler' },
-    { key: '4', icon: <FileTextOutlined />, label: 'Satışlar' } // Label updated
+    { key: '4', icon: <FileTextOutlined />, label: 'Satışlar ve Raporlama' } 
   ];
 
   const renderContent = () => {
@@ -90,8 +91,8 @@ function App() {
 
   if (!user) {
     return (
-      <Layout style={{ minHeight: '100vh' }}>
-        <Content style={{ padding: '24px' }}>
+      <Layout style={{ minHeight: '100vh', backgroundColor: '#001529' }}>
+        <Content>
           <LoginForm onLogin={handleLogin} />
         </Content>
       </Layout>
@@ -107,9 +108,16 @@ function App() {
         justifyContent: 'space-between',
         alignItems: 'center'
       }}>
-        <Title style={{ color: 'white', margin: '16px 0' }} level={3}>
-          İlaç Takip Sistemi
-        </Title>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <img 
+            src={dashboardLogo} 
+            alt="Dashboard Logo" 
+            style={{ width: '80px', height: '80px', marginRight: '16px' }} 
+          />
+          <Title style={{ color: '#ff4d4f', margin: 0 }} level={3}> 
+            PharmaTrack
+          </Title>
+        </div>
         <Space>
           <Text style={{ color: 'white' }}>{user.ad}</Text>
           <Button 
@@ -124,7 +132,7 @@ function App() {
       </Header>
       
       <Layout>
-        <Sider width={200}>
+        <Sider width={220}> 
           <Menu
             mode="inline"
             selectedKeys={[selectedMenu]}
